@@ -102,21 +102,10 @@ int calculateCost(vector<vector<int>>& reducedMatrix) {
     return cost;
 }
 
-// Вывод текущего состояния дерева ветвлений
-void printBranchingTree(Node* node) {
-    cout << "\nДерево ветвления (узел):\n";
-    for (const auto& step : node->path) {
-        cout << "Ребро: (" << step.first + 1 << ", " << step.second + 1 << ")\n";
-    }
-    cout << "Оценка стоимости: " << node->cost << "\n";
-}
-
 // Вывод решения задачи коммивояжера
 void printSolution(Node* node, const vector<vector<int>>& costMatrix) {
-    cout << "\nШаги выполнения:\n";
     int totalCost = 0;
     for (const auto& step : node->path) {
-        cout << step.first + 1 << " -> " << step.second + 1 << "\n";
         totalCost += costMatrix[step.first][step.second];
     }
     cout << "\nОптимальный маршрут: ";
@@ -134,86 +123,6 @@ struct CompareNodes {
         return lhs->cost > rhs->cost; // Узел с меньшей стоимостью имеет более высокий приоритет
     }
 };
-
-// Вывод одного узла дерева ветвления
-void printNode(Node* node, const string& prefix, bool isLast) {
-    cout << prefix;
-    cout << (isLast ? "|__ " : "|-- ");
-
-    if (node->level == 0) {
-        // Корень дерева не имеет информации об участке маршрута и оценке
-        cout << "Корневой узел (нет оценки)\n";
-    }
-    else {
-        // Узел содержит информацию об участке маршрута и оценке
-        const auto& lastEdge = node->path.back();
-        cout << "Узел: ";
-        if (node->cost == INT_MAX) {
-            cout << "!(" << lastEdge.first + 1 << ", " << lastEdge.second + 1 << ")";
-        }
-        else {
-            cout << "(" << lastEdge.first + 1 << ", " << lastEdge.second + 1 << ")";
-        }
-        cout << ", Оценка: " << node->cost << "\n";
-    }
-
-    string newPrefix = prefix + (isLast ? "    " : "|   ");
-
-    // Вывод всех рёбер пути (включая текущий)
-    for (size_t i = 0; i < node->path.size(); i++) {
-        const auto& edge = node->path[i];
-        cout << newPrefix << (i + 1 == node->path.size() ? "|__ " : "|-- ");
-        cout << "Ребро: (" << edge.first + 1 << ", " << edge.second + 1 << ")\n";
-    }
-}
-
-// Вывод дерева ветвления
-void printBranchingTreeAtEnd(Node* root) {
-    queue<pair<Node*, string>> q; // Очередь для обхода узлов, с их префиксом для отображения
-    q.push({ root, "" }); // Добавляем корень
-
-    while (!q.empty()) {
-        Node* curr = q.front().first;
-        string prefix = q.front().second;
-        q.pop();
-
-        bool isLast = q.empty(); // Проверяем, последний ли это узел в очереди для текущего уровня
-        cout << prefix;
-        cout << (isLast ? "|__ " : "|-- ");
-
-        // Если это корневой узел
-        if (curr->level == 0) {
-            cout << "Корневой узел\n";
-        }
-        else {
-            const auto& lastEdge = curr->path.back();
-            cout << "Узел: ";
-            if (curr->cost == INT_MAX) {
-                cout << "!(" << lastEdge.first + 1 << ", " << lastEdge.second + 1 << ")";
-            }
-            else {
-                cout << "(" << lastEdge.first + 1 << ", " << lastEdge.second + 1 << ")";
-            }
-            cout << ", Оценка: " << curr->cost << "\n";
-        }
-
-        // Формируем префикс для дочерних узлов
-        string newPrefix = prefix + (isLast ? "    " : "|   ");
-
-        // Добавляем дочерние узлы в очередь
-        for (int j = 0; j < curr->reducedMatrix.size(); j++) {
-            if (curr->reducedMatrix[curr->vertex][j] != INT_MAX) {
-                Node* child = newNode(
-                    curr->reducedMatrix, curr->path, curr->level + 1, curr->vertex, j
-                );
-                child->cost = curr->cost + curr->reducedMatrix[curr->vertex][j]
-                    + calculateCost(child->reducedMatrix);
-
-                q.push({ child, newPrefix });
-            }
-        }
-    }
-}
 
 // Вывод решения задачи коммивояжера с детализированным выводом шагов
 void TSPPathPrint(Node* list, const vector<vector<int>>& CostGraphMatrix) {
@@ -281,6 +190,54 @@ void TSPPathPrint(Node* list, const vector<vector<int>>& CostGraphMatrix) {
     }
 }
 
+// Вывод дерева ветвления
+void printBranchingTreeAtEnd(Node* root) {
+    queue<pair<Node*, string>> q; // Очередь для обхода узлов, с их префиксом для отображения
+    q.push({ root, "" }); // Добавляем корень
+
+    while (!q.empty()) {
+        Node* curr = q.front().first;
+        string prefix = q.front().second;
+        q.pop();
+
+        bool isLast = q.empty(); // Проверяем, последний ли это узел в очереди для текущего уровня
+        cout << prefix;
+        cout << (isLast ? "|__ " : "|-- ");
+
+        // Если это корневой узел
+        if (curr->level == 0) {
+            cout << "Корневой узел\n";
+        }
+        else {
+            const auto& lastEdge = curr->path.back();
+            cout << "Узел: ";
+            if (curr->cost == INT_MAX) {
+                cout << "!(" << lastEdge.first + 1 << ", " << lastEdge.second + 1 << ")";
+            }
+            else {
+                cout << "(" << lastEdge.first + 1 << ", " << lastEdge.second + 1 << ")";
+            }
+            cout << ", Оценка: " << curr->cost << "\n";
+        }
+
+        // Формируем префикс для дочерних узлов
+        string newPrefix = prefix + (isLast ? "    " : "|   ");
+
+        // Добавляем дочерние узлы в очередь
+        for (int j = 0; j < curr->reducedMatrix.size(); j++) {
+            if (curr->reducedMatrix[curr->vertex][j] != INT_MAX) {
+                Node* child = newNode(
+                    curr->reducedMatrix, curr->path, curr->level + 1, curr->vertex, j
+                );
+                child->cost = curr->cost + curr->reducedMatrix[curr->vertex][j]
+                    + calculateCost(child->reducedMatrix);
+
+                q.push({ child, newPrefix });
+            }
+        }
+    }
+}
+
 // Алгоритм Литтла с обновлениями
 int solveTSP(vector<vector<int>> costMatrix) {
     priority_queue<Node*, vector<Node*>, CompareNodes> pq;
@@ -298,9 +255,9 @@ int solveTSP(vector<vector<int>> costMatrix) {
 
         if (min->level == costMatrix.size() - 1) {
             min->path.emplace_back(min->vertex, 0);
-
-            cout << "Решение найдено!\n";
             TSPPathPrint(min, costMatrix);
+            printSolution(min, costMatrix);
+            cout << endl;
             printBranchingTreeAtEnd(root); // Передаем корень для вывода дерева
             return min->cost;
         }
