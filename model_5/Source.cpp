@@ -183,7 +183,7 @@ void printBranchingTreeAtEnd(Node* root) {
 
         // Если это корневой узел
         if (curr->level == 0) {
-            cout << "Корневой узел (нет оценки)\n";
+            cout << "Корневой узел\n";
         }
         else {
             const auto& lastEdge = curr->path.back();
