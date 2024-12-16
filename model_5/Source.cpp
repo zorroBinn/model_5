@@ -14,36 +14,28 @@ struct Node {
     int cost;  //Стоимость узла
     int vertex;  //Текущая вершина
     int level;  //Глубина уровня дерева
-    vector<Node*> children;  //Дочерние узлы
-    pair<int, int> edge;  //Выбранное ребро (i, j)
-    bool selected;  //Указывает, выбрано ребро или нет
 };
 
 vector<double> theta;  //Хранит оценки стоимости узлов дерева
 
 //Создание нового узла дерева ветвей и границ
-Node* newNode(const vector<vector<int>>& parentMatrix, const vector<pair<int, int>>& path, int level, int i, int j, bool selected = true) {
-    Node* node = new Node;
-    node->path = path;
+Node* newNode(const vector<vector<int>>& parentMatrix, const vector<pair<int, int>>& path, int level, int i, int j) {
+    Node* node = new Node; //Создаем новый узел
+    node->path = path; //Копируем путь из родительского узла
 
-    if (level != 0) {
+    if (level != 0) { //Если это не корневой узел, добавляем новое ребро (i, j) в путь
         node->path.emplace_back(i, j);
     }
-
-    node->reducedMatrix = parentMatrix;
-
-    //Удаляем строки и столбцы
+    node->reducedMatrix = parentMatrix; //Копируем матрицу из родителя
+    //Удаляем строку i и столбец j в матрице, чтобы исключить повторное использование этого ребра
     for (int k = 0; level != 0 && k < node->reducedMatrix.size(); k++) {
         node->reducedMatrix[i][k] = INT_MAX;
         node->reducedMatrix[k][j] = INT_MAX;
     }
 
-    //Удаляем начальную точку
-    node->reducedMatrix[j][0] = INT_MAX;
-    node->level = level;
-    node->vertex = j;
-    node->edge = { i, j };
-    node->selected = selected;
+    node->reducedMatrix[j][0] = INT_MAX; //Удаляем обратный путь в матрице (возвращение в начальную точку)
+    node->level = level; //Устанавливаем текущий уровень узла (глубина дерева)
+    node->vertex = j; //Устанавливаем текущую вершину как j
 
     return node;
 }
@@ -51,7 +43,7 @@ Node* newNode(const vector<vector<int>>& parentMatrix, const vector<pair<int, in
 //Редукция строк
 int rowReduction(vector<vector<int>>& reducedMatrix, vector<int>& row) {
     fill(row.begin(), row.end(), INT_MAX);
-
+    //Ищем минимальный элемент в каждой строке
     for (int i = 0; i < reducedMatrix.size(); i++) {
         for (int j = 0; j < reducedMatrix[i].size(); j++) {
             if (reducedMatrix[i][j] < row[i]) {
@@ -59,7 +51,7 @@ int rowReduction(vector<vector<int>>& reducedMatrix, vector<int>& row) {
             }
         }
     }
-
+    //Вычитаем минимальные элементы из всех значений строки
     for (int i = 0; i < reducedMatrix.size(); i++) {
         for (int j = 0; j < reducedMatrix[i].size(); j++) {
             if (reducedMatrix[i][j] != INT_MAX && row[i] != INT_MAX) {
@@ -73,7 +65,7 @@ int rowReduction(vector<vector<int>>& reducedMatrix, vector<int>& row) {
 //Редукция столбцов
 int columnReduction(vector<vector<int>>& reducedMatrix, vector<int>& col) {
     fill(col.begin(), col.end(), INT_MAX);
-
+    //Ищем минимальный элемент в каждом столбце
     for (int i = 0; i < reducedMatrix.size(); i++) {
         for (int j = 0; j < reducedMatrix[i].size(); j++) {
             if (reducedMatrix[i][j] < col[j]) {
@@ -81,7 +73,7 @@ int columnReduction(vector<vector<int>>& reducedMatrix, vector<int>& col) {
             }
         }
     }
-
+    //Вычитаем минимальные элементы из всех значений столбца
     for (int i = 0; i < reducedMatrix.size(); i++) {
         for (int j = 0; j < reducedMatrix[i].size(); j++) {
             if (reducedMatrix[i][j] != INT_MAX && col[j] != INT_MAX) {
@@ -94,13 +86,13 @@ int columnReduction(vector<vector<int>>& reducedMatrix, vector<int>& col) {
 
 //Вычисление стоимости узла после редукции
 int calculateCost(vector<vector<int>>& reducedMatrix) {
-    int cost = 0;
+    int cost = 0; //Переменная для хранения суммарной стоимости редукции
+    //Массивы для хранения минимальных значений строк и столбцов
     vector<int> row(reducedMatrix.size());
     rowReduction(reducedMatrix, row);
-
     vector<int> col(reducedMatrix[0].size());
     columnReduction(reducedMatrix, col);
-
+    //Суммируем минимальные элементы строк и столбцов, чтобы получить стоимость редукции
     for (int i = 0; i < reducedMatrix.size(); i++) {
         cost += (row[i] != INT_MAX) ? row[i] : 0;
         cost += (col[i] != INT_MAX) ? col[i] : 0;
@@ -110,16 +102,16 @@ int calculateCost(vector<vector<int>>& reducedMatrix) {
 
 //Вывод решения задачи коммивояжера
 void printSolution(Node* node, const vector<vector<int>>& costMatrix) {
-    int totalCost = 0;
-    for (const auto& step : node->path) {
+    int totalCost = 0; //Переменная для хранения общей стоимости маршрута
+    for (const auto& step : node->path) { //Подсчитываем стоимость маршрута, проходя по ребрам в пути
         totalCost += costMatrix[step.first][step.second];
     }
     cout << endl << "Оптимальный маршрут: ";
-    for (size_t i = 0; i < node->path.size(); i++) {
+    for (size_t i = 0; i < node->path.size(); i++) { //Выводим оптимальный маршрут
         cout << node->path[i].first + 1;
         if (i < node->path.size() - 1) cout << "-";
     }
-    cout << "-1" << endl;
+    cout << "-1" << endl; //Возврат в начальную вершину
     cout << "Общая стоимость: " << totalCost << endl;
 }
 
@@ -201,66 +193,33 @@ void TSPPathPrint(Node* list, const vector<vector<int>>& CostGraphMatrix) {
     }
 }
 
-//Добавлена функция вывода дерева узлов
-void printTree(Node* node, const string& prefix = "", bool isLast = true) {
-    if (!node) return;
-
-    //Формируем информацию о текущем узле
-    string edgeInfo;
-    if (node->level == 0) {
-        edgeInfo = "S(0)"; //Корневой узел
-    }
-    else if (node->selected) {
-        edgeInfo = "(" + to_string(node->edge.first + 1) + ", " + to_string(node->edge.second + 1) + ")";
-    }
-    else {
-        edgeInfo = "!" + to_string(node->edge.first + 1) + ", " + to_string(node->edge.second + 1) + ")";
-    }
-
-    cout << prefix << (isLast ? "|__" : "|--")
-        << " " << edgeInfo << ", Оценка: " << node->cost << "\n";
-
-    //Переход к дочерним узлам (только для выбранных ребер)
-    for (size_t i = 0; i < node->children.size(); i++) {
-        if (node->children[i]->selected) {
-            printTree(node->children[i], prefix + (isLast ? "    " : "|   "), i == node->children.size() - 1);
-        }
-    }
-}
-
 //Алгоритм Литтла
 int solve(vector<vector<int>> costMatrix) {
-    priority_queue<Node*, vector<Node*>, CompareNodes> pq;
-    vector<pair<int, int>> initialPath;
-    Node* root = newNode(costMatrix, initialPath, 0, -1, 0);
-    root->cost = calculateCost(root->reducedMatrix);
-    pq.push(root);
+    priority_queue<Node*, vector<Node*>, CompareNodes> pq; //Очередь узлов по приоритету стоимости
+    vector<pair<int, int>> initialPath; //Начальный путь
+    Node* root = newNode(costMatrix, initialPath, 0, -1, 0); //Создаем корневой узел
+    root->cost = calculateCost(root->reducedMatrix); //Вычисляем стоимость корневого узла
+    pq.push(root); //Добавляем корень в очередь
 
     vector<Node*> allNodes; //Хранение всех узлов
     allNodes.push_back(root);
 
     while (!pq.empty()) {
-        Node* min = pq.top();
+        Node* min = pq.top(); //Извлекаем узел с минимальной стоимостью
         pq.pop();
-
+        //Если достигнут последний уровень дерева, завершаем построение пути
         if (min->level == costMatrix.size() - 1) {
-            min->path.emplace_back(min->vertex, 0);
-            TSPPathPrint(min, costMatrix);
-            printSolution(min, costMatrix);
-
-            //Печать дерева узлов
-            cout << endl << "Дерево:" << endl;
-            printTree(root);
-
+            min->path.emplace_back(min->vertex, 0); //Добавляем возвращение в начальную вершину
+            TSPPathPrint(min, costMatrix); //Печатаем шаги решения
+            printSolution(min, costMatrix); //Печатаем итоговое решение
             return min->cost;
         }
-
+        //Для каждого возможного следующего шага создаем дочерний узел
         for (int j = 0; j < costMatrix.size(); j++) {
-            if (min->reducedMatrix[min->vertex][j] != INT_MAX) {
+            if (min->reducedMatrix[min->vertex][j] != INT_MAX) { //Если ребро допустимо
                 Node* child = newNode(min->reducedMatrix, min->path, min->level + 1, min->vertex, j);
                 child->cost = min->cost + min->reducedMatrix[min->vertex][j] + calculateCost(child->reducedMatrix);
-                min->children.push_back(child); //Добавляем дочерний узел к текущему узлу
-                pq.push(child);
+                pq.push(child); //Добавляем узел в очередь
                 allNodes.push_back(child); //Добавляем узел в общий список
             }
         }
