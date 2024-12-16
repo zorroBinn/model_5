@@ -2,6 +2,7 @@
 #include <vector>
 #include <queue>
 #include <limits>
+#include <string>
 #include <cstring>
 #include <iomanip>
 #include <Windows.h>
@@ -13,12 +14,15 @@ struct Node {
     int cost;  //Стоимость узла
     int vertex;  //Текущая вершина
     int level;  //Глубина уровня дерева
+    vector<Node*> children;  //Дочерние узлы
+    pair<int, int> edge;  //Выбранное ребро (i, j)
+    bool selected;  //Указывает, выбрано ребро или нет
 };
 
 vector<double> theta;  //Хранит оценки стоимости узлов дерева
 
 //Создание нового узла дерева ветвей и границ
-Node* newNode(const vector<vector<int>>& parentMatrix, const vector<pair<int, int>>& path, int level, int i, int j) {
+Node* newNode(const vector<vector<int>>& parentMatrix, const vector<pair<int, int>>& path, int level, int i, int j, bool selected = true) {
     Node* node = new Node;
     node->path = path;
 
@@ -38,6 +42,8 @@ Node* newNode(const vector<vector<int>>& parentMatrix, const vector<pair<int, in
     node->reducedMatrix[j][0] = INT_MAX;
     node->level = level;
     node->vertex = j;
+    node->edge = { i, j };
+    node->selected = selected;
 
     return node;
 }
@@ -195,6 +201,33 @@ void TSPPathPrint(Node* list, const vector<vector<int>>& CostGraphMatrix) {
     }
 }
 
+//Добавлена функция вывода дерева узлов
+void printTree(Node* node, const string& prefix = "", bool isLast = true) {
+    if (!node) return;
+
+    //Формируем информацию о текущем узле
+    string edgeInfo;
+    if (node->level == 0) {
+        edgeInfo = "S(0)"; //Корневой узел
+    }
+    else if (node->selected) {
+        edgeInfo = "(" + to_string(node->edge.first + 1) + ", " + to_string(node->edge.second + 1) + ")";
+    }
+    else {
+        edgeInfo = "!" + to_string(node->edge.first + 1) + ", " + to_string(node->edge.second + 1) + ")";
+    }
+
+    cout << prefix << (isLast ? "|__" : "|--")
+        << " " << edgeInfo << ", Оценка: " << node->cost << "\n";
+
+    //Переход к дочерним узлам (только для выбранных ребер)
+    for (size_t i = 0; i < node->children.size(); i++) {
+        if (node->children[i]->selected) {
+            printTree(node->children[i], prefix + (isLast ? "    " : "|   "), i == node->children.size() - 1);
+        }
+    }
+}
+
 //Алгоритм Литтла
 int solve(vector<vector<int>> costMatrix) {
     priority_queue<Node*, vector<Node*>, CompareNodes> pq;
@@ -214,7 +247,11 @@ int solve(vector<vector<int>> costMatrix) {
             min->path.emplace_back(min->vertex, 0);
             TSPPathPrint(min, costMatrix);
             printSolution(min, costMatrix);
-            cout << endl;
+
+            //Печать дерева узлов
+            cout << endl << "Дерево:" << endl;
+            printTree(root);
+
             return min->cost;
         }
 
@@ -222,6 +259,7 @@ int solve(vector<vector<int>> costMatrix) {
             if (min->reducedMatrix[min->vertex][j] != INT_MAX) {
                 Node* child = newNode(min->reducedMatrix, min->path, min->level + 1, min->vertex, j);
                 child->cost = min->cost + min->reducedMatrix[min->vertex][j] + calculateCost(child->reducedMatrix);
+                min->children.push_back(child); //Добавляем дочерний узел к текущему узлу
                 pq.push(child);
                 allNodes.push_back(child); //Добавляем узел в общий список
             }
